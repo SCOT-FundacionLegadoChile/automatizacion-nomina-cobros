@@ -1,81 +1,98 @@
+#######################################################################################################################
+#
+# Codigo de Automatizacion de la Nomina de Cobros de socios FLC
+#
+#   El codigo toma el ARCHIVO UINVERSO descargado desde el banco y debe generar la
+#   NOMINA DE COBROS para subir luego al banco con el detalle de los cobros por PAC
+#   a los socios de FLC inscritos.
+#
+# Estructura ARCHIVO UNIVERSO
+#
+#   0   (3)      3     (3)      6     (3)       9     10    (22)        32          33   (8)       41     (8)       49
+#   | cod. banco | cod. empresa | cod. convenio | 'D' | id. de servicio | 'espacio' | AAAAMMDD gen | AAAAMMDD serv. | 'espacio' |
+#
+#   ...:::...:......................:........::::::::.
+#   001015051D0000000000000029788537 2017103120161109
+#
+# Estructura NOMINA DE COBROS
+#
+#   0     (3)    3     (3)      6      (3)      9     10     (22)       32          33     (10)      43    (11)    54     (8)       62     (8)       70 (10)
+#   | cod. banco | cod. empresa | cod. convenio | 'D' | id. de servicio | 'espacio' | info adicional | monto cargo | AAAAMMDD fact. | AAAAMMDD venc. | .'s |
+#
+#
+#   ...:::...:......................:..........:::::::::::........::::::::..........
+#   001015051D029788537              L.GALLARDO000002929002017110120171106..........
+#
+#
+#######################################################################################################################
+
 # noinspection PyUnresolvedReferences
 import numpy as np
 from xlrd import open_workbook
 
-Mes="Septiembre 2017"
-#Read cell from sheet xlsx.
+# 1. Extraer nombres y montos de cobro de 'Registro Donaciones.xls'
+#
 
-i=0
+mes = "Septiembre 2017"
 wb = open_workbook('Registro Donaciones.xls')
-for sheet in wb.sheets():
-    i+=1
-    if i==1:
-        number_of_rows = sheet.nrows
-        number_of_columns = sheet.ncols
-        #print(number_of_rows)
-        #print(number_of_columns)
 
-        items = []
+items = []
+rows   = []
+nombres = []
+montos_uf = []
+montos_clp = []
 
-        rows = []
-        values = []
-        Nombre=[]
-        Monto=[]
+sheet = wb.sheet_by_name('PACs')
+nrows = sheet.nrows
+ncols = sheet.ncols
+start_row = 0
 
-        for row in range (1,number_of_rows):
-            value = (sheet.cell(row, 0).value)
-            if value==Mes:
-                start=row
-                for row2 in range (start,number_of_rows):
-                    value = (sheet.cell(row2, 0).value)
-                    name  = (sheet.cell(row2, 2).value)
-                    #monto_aux=[00000000000]
-                    monto = (sheet.cell(row2, 5).value)
-                    #monto_aux[]
-                    Nombre.append(name[0:10])
-                    Monto.append(str(int(monto)))
-                    if value!=1 and value!=Mes:
-                        end=row2
-                        break
+# Encontrar mes correspondiente hoja de calculo
+for row in range (1,nrows):
+    value = sheet.cell(row, 0).value
+    if value == mes:
+        start_row = row
 
-            values.append(value)
-        #print(sheet.cell(0,0).value)
-        #print(values)
-        #print(start)
-        #print(end)
-        #print(Nombre)
-        print(Monto)
-        '''
-        for row in range(1, number_of_rows):
-            values = []
-            for col in range(number_of_columns):
-                value  = (sheet.cell(row,0).value)
-                try:
-                    value = str(int(value))
-                except ValueError:
-                    pass
-                finally:
-                    values.append(value)
-            print(values)
-            '''
+# Extraer nombres y montos de cobro
+for row in range (start_row, nrows):
+    value = sheet.cell(row, 0).value
+    if (value != 1) and (value != mes):
+        end = row
+        break
 
-#Read data from .txt
+    name = sheet.cell(row, 2).value
+    monto_uf = sheet.cell(row, 4).value
+    monto_clp = sheet.cell(row, 5).value
 
-file_object  = open("Cobro noviembre.txt", "r")
-#Output=[]
-#Output2=[]
-Space="              "
-Final=[]
-contador=0
+    nombres.append(name[0:10])
+    montos_uf.append(str(int(monto_uf)))
+    montos_clp.append(str(int(monto_clp)))
+
+    #print(sheet.cell(0,0).value)
+    #print(start)
+    #print(end)
+    #print(Nombre)
+    print(montos_clp)
+
+
+# 2. Leer archivo universo y escribir archivo de cobros
+#
+file_object = open("Cobro noviembre.txt", "r")
+
+spaces = "              " # 14 espacios
+dots   = ".........."
+contador = 0
+
+archivo_final = []
+
 for line in file_object:
-    Output=line[0:10]
-    Output2=line[23:32]
-    aux=str(Monto[contador]+"00")
-    Final.append(Output+Output2+Space+Nombre[contador]+aux.zfill(13))
-    contador+=1
-print(Final)
+    aux1 = line[0:10]
+    aux2 = line[23:32]
+    monto_cobro = (str(montos_clp[contador] + "00")).zfill(11)
+    archivo_final.append(aux1 + aux2 + spaces + nombres[contador] + monto_cobro + dots)
+    contador += 1
 
-a="0020"
-F=str(Monto[1]+a)
+a = "0020"
+F = str(Monto[1]+a)
 #a[-3:-1]=b
 print(F.zfill(13))
