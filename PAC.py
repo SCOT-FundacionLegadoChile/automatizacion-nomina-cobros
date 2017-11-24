@@ -27,6 +27,17 @@
 #######################################################################################################################
 
 from xlrd import open_workbook
+import urllib
+import json
+import requests
+
+## INGRESAR DIRECCION DEL DOCUMENTO
+# Universo = input("Ingrese la ubicacion del archivo Universo")
+# Salida1  = input("Ingrese la ubicacion de destino archivo nomina cobro")
+# Mes      = input("Ingrese la fecha de la forma: Mes A~no (Septiembre 2017)")
+# Fecha1   = input("Ingrese fecha subida del documento de la forma A~noMesDia")
+# Fecha2   = input("Ingrese fecha de cobro del banco de la forma A~noMesDia")
+# Salida2  = "Nomina "+Mes
 
 # 1. Extraer nombres y montos de cobro de 'Registro Donaciones.xls'
 #
@@ -34,18 +45,12 @@ from xlrd import open_workbook
 mes = 'Octubre 2017'
 wb = open_workbook('Registro Donaciones.xls')
 
-items = []
-rows   = []
-nombres = []
-montos_uf = []
-montos_clp = []
-
 sheet = wb.sheet_by_name('PACs')
 nrows = sheet.nrows
 ncols = sheet.ncols
 start_row = 0
 
-# Encontrar mes correspondiente hoja de calculo
+# Encontrar mes correspondiente en hoja de calculo
 for row in range (1,nrows):
     value = sheet.cell(row, 0).value
     if value == mes:
@@ -57,6 +62,12 @@ if start_row == 0:
     exit()
 
 # Extraer nombres y montos de cobro
+items = []
+rows   = []
+nombres = []
+montos_uf = []
+montos_clp = []
+
 for row in range (start_row, nrows):
     value = sheet.cell(row, 0).value
     if (value != 1) and (value != mes):
@@ -71,6 +82,14 @@ for row in range (start_row, nrows):
     montos_uf.append(str(int(monto_uf)))
     montos_clp.append(str(int(monto_clp)))
 
+# Docuentacion para extraer ultima uf en tiempo real
+# http://api.sbif.cl/documentacion/UF.html
+# HTTP GET http://api.sbif.cl/api-sbifv3/recursos_api/uf/2017/11?apikey=f2bff81776be1aa02fb4f9b6d112e5c3adb3a714&formato=json
+#
+# url = 'http://api.sbif.cl/api-sbifv3/recursos_api/uf/2017/11?apikey=f2bff81776be1aa02fb4f9b6d112e5c3adb3a714&formato=json'
+# r = requests.get(url)
+# response = json.loads(r.text)
+# print response['UFs'][0]['Valor']
 
 # 2. Leer archivo universo y escribir archivo de cobros
 #
@@ -92,7 +111,7 @@ for line in file_object:
         nombre_socio = nombres[i].ljust(10)
 
         linea_cobro = aux1 + aux2 + nombre_socio + monto_cobro + fecha_facturacion + fecha_vencimiento + dots
-        print str(i+1) + ', ' + linea_cobro
+        # print str(i+1) + ', ' + linea_cobro
         archivo_final.append(linea_cobro)
 
         i += 1
@@ -103,7 +122,9 @@ for line in file_object:
         print 'Error: archivo universo corrupto'
 
 
-a = '0020'
-F = str(montos_clp[1]+a)
-#a[-3:-1]=b
-print(F.zfill(13))
+#Crear archivo y guardar datos.
+
+file = open('COBROx','w')
+for i in range(0,len(archivo_final)):
+    file.write(archivo_final[i]+"\n")
+file.close()
