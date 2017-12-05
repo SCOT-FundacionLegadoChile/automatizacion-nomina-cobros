@@ -1,4 +1,4 @@
-# automatizacion-nomina-cobros
+# Automatizacion Nomina Cobros
 
 ## Resumen
 Cada mes el banco genera un archivo ‘cobro universo’. Con la información que este entrega (socios con PAC, entre otros) se debe generar y enviar al banco un archivo de cobro indicando el socio y el monto a cobrar (entre otros). En este momento la generación del archivo de cobro que se envía al banco se realiza de manera manual. La tarea es automatizar la generación de este archivo en base al archivo de origen ‘cobro universo’.
