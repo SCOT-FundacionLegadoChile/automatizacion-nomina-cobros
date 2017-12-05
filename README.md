@@ -13,6 +13,9 @@ Cada mes el banco genera un archivo ‘cobro universo’. Con la información qu
 ¿Porqué ‘Cobro Noviembre’ tiene 133 ingresos y ‘COBRO1103’ tiene 131?
 ¿Cómo se definía la fecha de facturación y vencimiento?
 
+## Notas
+Se excluyen del repositorios archivos de Registro de socios y archivos de cobro. Incluir de manera personal.
+
 ## Otros
 Revisar links para obtener valor UF actualizado automáticamente:
 http://mindicador.cl/
