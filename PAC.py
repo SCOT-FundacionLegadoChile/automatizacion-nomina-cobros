@@ -23,7 +23,8 @@
 #     ...:::...:......................:..........:::::::::::........::::::::..........
 #     001015051D029788537              L.GALLARDO000002929002017110120171106..........
 #
-#
+# OBS. El rut en caso de terminar con -k, esta tiene que ser mayúscula -K
+# OBS. En el archivo Registro Donaciones, el mes tiene que estar acompañado del año de la forma: Mes Año -> Octubre 2017
 #######################################################################################################################
 
 from xlrd import open_workbook
@@ -42,6 +43,7 @@ import requests
 # 1. Extraer nombres y montos de cobro de 'Registro Donaciones.xls'
 #
 
+# TODO:  PEDIR MES X TELEGRAM
 mes = 'Octubre 2017'
 wb = open_workbook('Registro Donaciones.xls')
 
@@ -54,19 +56,21 @@ start_row = 0
 for row in range (1,nrows):
     value = sheet.cell(row, 0).value
     if value == mes:
+        print ('encontrado')
         start_row = row
         break;
 
 if start_row == 0:
-    print 'Error: no se encontro mes ingresado en registro de donaciones'
+    print ('Error: no se encontro mes ingresado en registro de donaciones')
     exit()
 
-# Extraer nombres y montos de cobro
+# Extraer nombres, montos de cobro y rut
 items = []
 rows   = []
 nombres = []
 montos_uf = []
 montos_clp = []
+rut=[]
 
 for row in range (start_row, nrows):
     value = sheet.cell(row, 0).value
@@ -75,13 +79,18 @@ for row in range (start_row, nrows):
         break
 
     name = sheet.cell(row, 2).value
-    monto_uf = sheet.cell(row, 4).value
-    monto_clp = sheet.cell(row, 5).value
+    monto_uf_aux = sheet.cell(row, 4).value
+    monto_clp_aux = sheet.cell(row, 5).value
+    rut_aux=sheet.cell(row, 3).value
+    rut_aux2=rut_aux.replace(".", "")
+    rut_aux3=rut_aux2.replace("-", "")
 
     nombres.append(name[0:10])
-    montos_uf.append(str(int(monto_uf)))
-    montos_clp.append(str(int(monto_clp)))
+    montos_uf.append(str(int(monto_uf_aux)))
+    montos_clp.append(str(int(monto_clp_aux)))
+    rut.append(str(rut_aux3))
 
+print(len(rut))
 # Docuentacion para extraer ultima uf en tiempo real
 # http://api.sbif.cl/documentacion/UF.html
 # HTTP GET http://api.sbif.cl/api-sbifv3/recursos_api/uf/2017/11?apikey=f2bff81776be1aa02fb4f9b6d112e5c3adb3a714&formato=json
@@ -93,33 +102,50 @@ for row in range (start_row, nrows):
 
 # 2. Leer archivo universo y escribir archivo de cobros
 #
-file_object = open('cobros pasados/Cobro octubre.txt', 'r')
+file_object = open('Cobro octubre.txt', 'r')
 
 # TODO: como se definen las fechas de facturacion y vencimiento??
-fecha_facturacion = '20171102'
-fecha_vencimiento = '20171106'
+fecha_facturacion = '20171003'
+fecha_vencimiento = '20171006'
 dots   = '..........'
 
 archivo_final = []
 
+
+# TODO: No funciona pq el número de filas de COBRO es mayor a la del XLSX.
 i = 0
+j = 0
 for line in file_object:
     if line[9] == 'D':
-        aux1 = line[0:10] # cod. banco + cod. empresa + cod. convenio + 'D'
-        aux2 = line[23:32].ljust(23) # id. servicio
-        monto_cobro = str(montos_clp[i] + '00').zfill(11)
-        nombre_socio = nombres[i].ljust(10)
+        # aux00 -> RUT
+        #print(i)
+        aux0 = line[23:32]
+        if aux0[0]=='0':
+            aux00=aux0[1:]
+        else:
+            aux00=aux0
+        print('aux '+aux00)
+        print('rutj'+rut[j])
+        #print('ruti'+rut[i])
+        if aux00==rut[j]:
+             #print(aux00)
+             #print(rut[i])
+             aux1 = line[0:10] # cod. banco + cod. empresa + cod. convenio + 'D'
+             aux2 = line[23:32].ljust(23) # id. servicio
+             monto_cobro = str(montos_clp[j] + '00').zfill(11)
+             nombre_socio = nombres[j].ljust(10)
 
-        linea_cobro = aux1 + aux2 + nombre_socio + monto_cobro + fecha_facturacion + fecha_vencimiento + dots
+             linea_cobro = aux1 + aux2 + nombre_socio + monto_cobro + fecha_facturacion + fecha_vencimiento + dots
         # print str(i+1) + ', ' + linea_cobro
-        archivo_final.append(linea_cobro)
-
+             archivo_final.append(linea_cobro)
+             j+=1
         i += 1
+
     elif line[9] == 'T':
         if int(line[33:39]) != i:
-            print 'Error: numero de socios procesados vs indicados en universo, no coinciden'
+            print ('Error: numero de socios procesados vs indicados en universo, no coinciden')
     else:
-        print 'Error: archivo universo corrupto'
+        print ('Error: archivo universo corrupto')
 
 
 #Crear archivo y guardar datos.
